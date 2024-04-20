@@ -97,12 +97,35 @@ void print_data(char *cbuf, int nchar)
 }
 
 
-void copy_dc(char *src, char *dest, int max, int flags)
+void copy_dc(char *sp, char *dp, int max, int flags)
 {
+	int i, j, k;
 	char c;
 
-	for (; max > 0; max--) {
-		c = *src++;
+	dprint(("copy_dc: max %d flags %d dp %p\n", max, flags, dp));
+	for (i = 0; i < max; i++) {
+		c = sp[i];
+		/* skip EOL if requested */
+		if ((flags & 8) && !c) {
+			j = i / 10 * 10;    /* start of word */
+			if (i - j == 9)
+				j += 10;    /* also scan next word */
+			j = MIN(j+10, max); /* end of word */
+			for (k = i+1; k < j; k++)
+				if (sp[k])
+					break;
+			dprint(("copy_dc: i=%d j=%d k=%d dp %p\n", i, j, k, dp));
+			if (k == j) {	   /* all null, EOL found */
+				dprint(("copy_dc: EOL\n"));
+				if (j + 2 < max) {
+					*dp++ = ' ';
+					*dp++ = ' ';
+				}
+				i = j - 1; /* continue on next line */
+				continue;
+			}
+
+		}
 		/* stop on non-alphanumeric if requested */
 		if ((flags & 1) && c > 36)
 			break;
@@ -112,9 +135,9 @@ void copy_dc(char *src, char *dest, int max, int flags)
 		/* stop on null if requested */
 		if ((flags & 4) && !c)
 			break;
-		*dest++ = dcmap[c];
+		*dp++ = dcmap[c];
 	}
-	*dest = '\0';
+	*dp++ = '\0';
 }
 
 

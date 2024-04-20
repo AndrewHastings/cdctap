@@ -56,6 +56,7 @@ rectype_t id_record(char *bp, int cnt,
 	/* check for ".PROC," */
 	if (strncmp(bp, "\057\020\022\017\003\056", 6) == 0) {
 		copy_dc(bp+6, name, MIN(7, cnt-6), DC_ALNUM);
+		copy_dc(bp, extra, MIN(EXTRA_LEN, cnt), DC_TEXT);
 		return RT_PROC;
 	}
 
@@ -235,5 +236,6 @@ rectype_t id_record(char *bp, int cnt,
 		return RT_7700;
 
 	copy_dc(bp, name, 7, DC_NOSPC);
+	copy_dc(bp, extra, MIN(EXTRA_LEN, cnt), DC_TEXT);
 	return RT_TEXT;
 }

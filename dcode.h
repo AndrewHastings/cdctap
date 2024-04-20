@@ -18,6 +18,7 @@ extern char *c76map[64];
 #define DC_ALNUM  7	/* alphanumeric, null-terminated */
 #define DC_NOSPC  6	/* any character, terminate on space or null */
 #define DC_NONUL  4	/* any character, terminate on null */
+#define DC_TEXT   8	/* text lines with CDC line terminators */
 void copy_dc(char *src, char *dest, int max, int flags);
 
 int is_dc_ts(char *sp, char sep);

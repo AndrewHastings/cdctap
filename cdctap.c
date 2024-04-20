@@ -225,7 +225,7 @@ int do_topt(TAPE *tap)
 
 			printf("%-7s %-6s", name, rectype[rt]);
 			if (rt > RT_EOF)
-				printf(" %8d %s", reclen, dp);
+				printf(" %8d %9s", reclen, dp);
 			if (verbose > 1)
 				printf(" %s", extra);
 			putchar('\n');
