@@ -217,18 +217,19 @@ int do_topt(TAPE *tap)
 		if (verbose) {
 			char *dp = date;
 
-			/* omit leading/trailing space from date */
-			if (dp[9] == ' ')
-				dp[9] = '\0';
+			/* omit trailing space/period, leading space */
+			for (nchar = 9; nchar > 7; nchar--)
+				if (dp[nchar] == ' ' || dp[nchar] == '.')
+					dp[nchar] = '\0';
 			if (dp[0] == ' ')
 				dp++;
 
 			printf("%-7s %-6s", name, rectype[rt]);
 			if (rt > RT_EOF)
-				printf(" %8d %9s", reclen, dp);
-			if (verbose > 1)
-				printf(" %s", extra);
-			putchar('\n');
+				printf(" %7d %8s", reclen, dp);
+			if (verbose < 2)
+				extra[48] = '\0';
+			printf(" %s\n", extra);
 		} else {
 			switch (rt) {
 			    case RT_EOF:

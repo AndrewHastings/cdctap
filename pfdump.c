@@ -100,74 +100,73 @@ void format_pflabel(char *dp, char *sp)
 
 void format_catentry(char *dp, char *sp)
 {
-	int tmp, len;
+	int ui, len;
 	char ctbuf[3], *ct = ctbuf;
 	char modebuf[7], *mode = modebuf;
 	char ssbuf[8], *ss = ssbuf;
 	char pw[12];
 	char ucw[16];
-	char ui[21], *un;
+	char unbuf[11], *un;
 
-	pw[0] = ucw[0] = ui[0] = 0;
+	pw[0] = ucw[0] = unbuf[0] = 0;
 
-	tmp = (sp[7] << 12) | (sp[8] << 6) | sp[9];
-	if (tmp) {
-		if ((un = ui_to_un(tmp)) != NULL)
-			sprintf(ui, " ui=%o (%s)", tmp, un);
-		else
-			sprintf(ui, " ui=%o", tmp);
-	}
-
+	ui = (sp[7] << 12) | (sp[8] << 6) | sp[9];
 	len = (sp[10] << 18) | (sp[11] << 12) | (sp[12] << 6) | sp[13];
 
 	switch (sp[40]) {
 	    case 0:   ct = "P"; break;
-	    case 1:   ct = "SP"; break;
+	    case 1:   ct = "S"; break;
 	    case 2:   ct = "L"; break;
 	    default:  sprintf(ct, "%d", sp[40]); break;
 	}
 
 	switch (sp[41]) {
-	    case 0:   mode = "WRITE"; break;
-	    case 1:   mode = "READ"; break;
-	    case 2:   mode = "APPEND"; break;
-	    case 3:   mode = "EXEC"; break;
-	    case 4:   mode = "NULL"; break;
-	    case 5:   mode = "MODIFY"; break;
-	    case 6:   mode = "READMD"; break;
-	    case 7:   mode = "READAP"; break;
-	    case 8:   mode = "UPDATE"; break;
-	    case 9:   mode = "READUP"; break;
+	    case 0:   mode = "W"; break;
+	    case 1:   mode = "R"; break;
+	    case 2:   mode = "A"; break;
+	    case 3:   mode = "X"; break;
+	    case 4:   mode = "N"; break;
+	    case 5:   mode = "M"; break;
+	    case 6:   mode = "RM"; break;
+	    case 7:   mode = "RA"; break;
+	    case 8:   mode = "U"; break;
+	    case 9:   mode = "RU"; break;
 	    default:  sprintf(mode, "%d", sp[41]); break;
 	}
 
 	switch (sp[61]) {
-	    case 0:   ss = "NULL"; break;
-	    case 1:   ss = "BASIC"; break;
-	    case 2:   ss = "FORT"; break;
-	    case 3:   ss = "FTNTS"; break;
-	    case 4:   ss = "EXEC"; break;
-	    case 5:   ss = "BATCH"; break;
+	    case 0:   ss = "NUL"; break;
+	    case 1:   ss = "BAS"; break;
+	    case 2:   ss = "FOR"; break;
+	    case 3:   ss = "FTN"; break;
+	    case 4:   ss = "EXE"; break;
+	    case 5:   ss = "BAT"; break;
 	    case 6:   ss = "MNF"; break;
-	    case 7:   ss = "SNOBOL"; break;
-	    case 8:   ss = "COBOL"; break;
-	    case 9:   ss = "PASCAL"; break;
-	    case 10:  ss = "ACCESS"; break;
-	    case 11:  ss = "TRANACT"; break;
+	    case 7:   ss = "SNO"; break;
+	    case 8:   ss = "COB"; break;
+	    case 9:   ss = "PAS"; break;
+	    case 10:  ss = "ACC"; break;
+	    case 11:  ss = "TRN"; break;
 	    default:  sprintf(ss, "%d", sp[61]); break;
 	}
 
-	copy_dc(sp+70, pw+4, 7, DC_NONUL);
-	if (pw[4])
-		memcpy(pw, " pw=", 4);
+	if (verbose > 1) {
+		if ((un = ui_to_un(ui)) != NULL)
+			sprintf(unbuf, " (%s)", un);
 
-	if (memcmp(sp+140, "\000\000\000\000\000\000\000\000\000\000",
-		   10) != 0) {
-		memcpy(ucw, " ucw=", 5);
-		copy_dc(sp+140, ucw+5, 10, DC_ALL);
+		copy_dc(sp+70, pw+4, 7, DC_NONUL);
+		if (pw[4])
+			memcpy(pw, " pw=", 4);
+
+		if (memcmp(sp+140, "\000\000\000\000\000\000\000\000\000\000",
+			   10) != 0) {
+			memcpy(ucw, " ucw=", 5);
+			copy_dc(sp+140, ucw+5, 10, DC_ALL);
+		}
 	}
 
-	sprintf(dp, "%6d %-2s %-6s %-7s%s%s%s", len, ct, mode, ss, ui, pw, ucw);
+	sprintf(dp, "%6d %-1s %-2s %-3s %6o%s%s%s", len, ct, mode, ss, ui,
+						    unbuf, pw, ucw);
 }
 
 
