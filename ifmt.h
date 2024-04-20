@@ -24,6 +24,7 @@ typedef struct {
 	int	cd_nleft;	/* # CDC chars left to consume from cbuf */
 } cdc_ctx_t;
 
+extern int unpack6(char *dst, char *src, int nbytes);
 extern int cdc_ctx_init(cdc_ctx_t *cd, TAPE *tap, char *tbuf, int nbytes, char **cbufp);
 extern void cdc_ctx_fini(cdc_ctx_t *cd);
 extern int cdc_skipr(cdc_ctx_t *cd);

@@ -86,10 +86,10 @@ int pack6(char *dst, char *src, int nchar)
 
 
 /* reading if tbuf != NULL, else writing (nbytes, cbufp ignored) */
-/* returns -1 on failure, else number of CDC chars unpacked */
+/* return: -1=EOF, -2=failure, else number of CDC chars unpacked */
 int cdc_ctx_init(cdc_ctx_t *cd, TAPE *tap, char *tbuf, int nbytes, char **cbufp)
 {
-	int nchar, rv = 0;
+	int nwords, rv;
 
 	memset(cd, 0, sizeof(cdc_ctx_t));
 	cd->cd_tap = tap;
@@ -98,44 +98,45 @@ int cdc_ctx_init(cdc_ctx_t *cd, TAPE *tap, char *tbuf, int nbytes, char **cbufp)
 		if (tap_is_write(tap)) {
 			fprintf(stderr, "cdc_ctx_init: attempt to read "
 					"tape open for writing\n");
-			return -1;
+			return -2;
 		}
-		nchar = nbytes*8/6;
-		cd->cd_cbuf = malloc(nchar + 4);
+		nwords = nbytes*8/60;
+		cd->cd_cbuf = malloc(nwords*10 + 9);
 		if (!cd->cd_cbuf) {
 			fprintf(stderr, "cdc_ctx_init: block size %d "
-					"(CDC chars %d) too large\n",
-				nbytes, nchar);
-			return -1;
+					"(CDC words %d) too large\n",
+				nbytes, nwords);
+			return -2;
 		}
 		rv = unpack6(cd->cd_cbuf, tbuf, nbytes);
-		if (rv != nchar) {
+		if (rv / 10 != nwords) {
 			fprintf(stderr,
 				"cdc_ctx_init: unpack6: expected %d, got %d\n",
-				nchar, rv);
-			return -1;
+				nwords * 10, rv);
+			return -2;
 		}
-		cd->cd_nchar = cd->cd_nleft = nchar;
-		cd->cd_reclen = nchar / 10;
+		cd->cd_nchar = cd->cd_nleft = nwords * 10;
+		cd->cd_reclen = nwords;
 		*cbufp = cd->cd_cbuf;
+		if (rv == 8 && (cd->cd_cbuf[7] & 017) == 017)
+			return -1;
 	} else {
 		if (!tap_is_write(tap)) {
 			fprintf(stderr, "cdc_ctx_init: attempt to write "
 					"tape open for reading\n");
-			return -1;
+			return -2;
 		}
-		nchar = nbytes*8/6;
 		cd->cd_cbuf = malloc(CDC_CBUFSZ);
 		cd->cd_tbuf = malloc(CDC_TBUFSZ);
 		if (!cd->cd_cbuf || !cd->cd_tbuf) {
 			free(cd->cd_cbuf);
 			fprintf(stderr, "cdc_ctx_init: out of memory "
 					"for writing\n");
-			return -1;
+			return -2;
 		}
 	}
 
-	return rv;
+	return cd->cd_nchar;
 }
 
 
@@ -153,7 +154,7 @@ void cdc_ctx_fini(cdc_ctx_t *cd)
 int cdc_skipr(cdc_ctx_t *cd)
 {
 	ssize_t nbytes;
-	int nchar;
+	int nwords;
 	char *unused;
 	
 	if (tap_is_write(cd->cd_tap)) {
@@ -169,9 +170,9 @@ int cdc_skipr(cdc_ctx_t *cd)
 		if (nbytes < 0)
 			break;
 
-		nchar = nbytes*8/6;
-		cd->cd_nchar = nchar;
-		cd->cd_reclen += nchar / 10;
+		nwords = nbytes*8/60;
+		cd->cd_nchar = nwords * 10;
+		cd->cd_reclen += nwords;
 	}
 	cd->cd_nleft = 0;
 
@@ -184,7 +185,7 @@ int cdc_skipr(cdc_ctx_t *cd)
 char *cdc_skipwords(cdc_ctx_t *cd, int nskip)
 {
 	ssize_t nbytes;
-	int nchar, cskip = nskip * 10;
+	int rv, nwords, cskip = nskip * 10;
 	char *tbuf;
 
 	dprint(("cdc_skipwords: skip %d words\n", nskip));
@@ -218,17 +219,17 @@ char *cdc_skipwords(cdc_ctx_t *cd, int nskip)
 		}
 
 		/* unpack to 6-bit characters */
-		nchar = nbytes*8/6;
-		cd->cd_nchar = nchar;
-		cd->cd_reclen += nchar / 10;
-		cd->cd_nleft = unpack6(cd->cd_cbuf, tbuf, nbytes);
-		if (cd->cd_nleft != nchar) {
+		nwords = nbytes*8/60;
+		cd->cd_nleft = cd->cd_nchar = nwords * 10;
+		cd->cd_reclen += nwords;
+		rv = unpack6(cd->cd_cbuf, tbuf, nbytes);
+		if (rv / 10 != nwords) {
 			fprintf(stderr,
 				"cdc_skipwords: unpack6: expected %d, got %d\n",
-				nchar, cd->cd_nleft);
+				nwords * 10, rv);
 			return NULL;
 		}
-		dprint(("cdc_skipwords: unpacked %d chars\n", nchar));
+		dprint(("cdc_skipwords: unpacked %d chars\n", rv));
 	}
 
 	dprint(("cdc_skipwords: skipping %d chars\n", cskip));

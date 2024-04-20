@@ -48,10 +48,10 @@ rectype_t id_record(char *bp, int cnt,
 
 	name[0] = date[0] = extra[0] = 0;
 	*ui = -1;
-	if (cnt < 8)
+	if (cnt < 0)
+		return RT_EOF;
+	if (cnt == 0)
 		return RT_EMPTY;
-	if (cnt == 8)
-		return ((bp[7] & 017) == 017) ? RT_EOF : RT_EMPTY;
 
 	/* check for ".PROC," */
 	if (strncmp(bp, "\057\020\022\017\003\056", 6) == 0) {

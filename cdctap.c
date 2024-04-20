@@ -68,7 +68,8 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
 		if (nchar < 0) {
-			ec = 2;
+			if (nchar == -2)
+				ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
@@ -115,9 +116,8 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 int do_ropt(TAPE *tap)
 {
 	ssize_t nbytes;
-	int nchar, ec = 0;
-	char *tbuf, *cbuf;
-	cdc_ctx_t cd;
+	int nchar, rv, ec = 0;
+	char *tbuf, *cbuf = NULL;
 
 	while (1) {
 		nbytes = tap_readblock(tap, &tbuf);
@@ -134,15 +134,26 @@ int do_ropt(TAPE *tap)
 		if (is_label(tbuf, nbytes))
 			print_label(tbuf);
 		else {
-			nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
-			if (nchar < 0) {
+			nchar = nbytes*8/6;
+			cbuf = realloc(cbuf, nchar);
+			if (!cbuf) {
+				fprintf(stderr, "do_ropt: block size %ld "
+                                        "(CDC chars %d) too large\n",
+					nbytes, nchar);
+				ec = 2;
+				break;
+			}
+			rv = unpack6(cbuf, tbuf, nbytes);
+			if (rv != nchar) {
+				fprintf(stderr, "do_ropt: expect %d, got %d\n",
+					nchar, rv);
 				ec = 2;
 				break;
 			}
 			print_data(cbuf, nchar);
-			cdc_ctx_fini(&cd);
 		}
 	}
+	free(cbuf);
 	return ec;
 }
 
@@ -195,7 +206,7 @@ int do_topt(TAPE *tap)
 
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
-		if (nchar < 0) {
+		if (nchar == -2) {
 			ec = 2;
 			break;
 		}
@@ -571,7 +582,8 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
 		if (nchar < 0) {
-			ec = 2;
+			if (nchar == -2)
+				ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
