@@ -28,13 +28,14 @@ int verbose = 0;
 
 static int ascii = 0;
 
-/*** Command processors ***/
 
-/** -d: show structure of PFDUMP record **/
+/*
+ * -d: show structure of PFDUMP record.
+ */
 
 int do_dopt(TAPE *tap, int argc, char **argv)
 {
-	int rv = 0;
+	int ec = 0;
 	ssize_t nbytes;
 	char *tbuf, *cbuf;
 	rectype_t rt;
@@ -54,7 +55,7 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 		nbytes = tap_readblock(tap, &tbuf);
 		if (nbytes < 0) {
 			if (nbytes == -2)
-				rv = 2;
+				ec = 2;
 			break;
 		}
 
@@ -67,7 +68,7 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
 		if (nchar < 0) {
-			rv = 2;
+			ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
@@ -101,18 +102,20 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 	for (i = 0; i < argc; i++)
 		if (!found[i]) {
 			fprintf(stderr, "%s not found\n", argv[i]);
-			rv = 3;
+			ec = 3;
 		}
-	return rv;
+	return ec;
 }
 
 
-/** -r: show raw tape block structure **/
+/*
+ * -r: show raw tape block structure.
+ */
 
 int do_ropt(TAPE *tap)
 {
 	ssize_t nbytes;
-	int nchar, rv = 0;
+	int nchar, ec = 0;
 	char *tbuf, *cbuf;
 	cdc_ctx_t cd;
 
@@ -120,7 +123,7 @@ int do_ropt(TAPE *tap)
 		nbytes = tap_readblock(tap, &tbuf);
 		if (nbytes < 0) {
 			if (nbytes == -2)
-				rv = 2;
+				ec = 2;
 			break;
 		}
 		if (nbytes == 0) {
@@ -133,24 +136,26 @@ int do_ropt(TAPE *tap)
 		else {
 			nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
 			if (nchar < 0) {
-				rv = 2;
+				ec = 2;
 				break;
 			}
 			print_data(cbuf, nchar);
 			cdc_ctx_fini(&cd);
 		}
 	}
-	return rv;
+	return ec;
 }
 
 
-/** -t: catalog the tape **/
+/*
+ * -t: catalog the tape.
+ */
 
 int do_topt(TAPE *tap)
 {
 	ssize_t nbytes;
 	char *tbuf, *cbuf;
-	int rv = 0;
+	int ec = 0;
 	cdc_ctx_t cd;
 	int nchar, ui;
 	char name[8], date[11], extra[100];
@@ -162,7 +167,7 @@ int do_topt(TAPE *tap)
 		nbytes = tap_readblock(tap, &tbuf);
 		if (nbytes < 0) {
 			if (nbytes == -2)
-				rv = 2;
+				ec = 2;
 			break;
 		}
 		if (nbytes == 0) {
@@ -191,7 +196,7 @@ int do_topt(TAPE *tap)
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
 		if (nchar < 0) {
-			rv = 2;
+			ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
@@ -233,11 +238,13 @@ int do_topt(TAPE *tap)
 		}
 		cdc_ctx_fini(&cd);
 	}
-	return rv;
+	return ec;
 }
 
 
-/** -x: extract files from tape **/
+/*
+ * -x: extract files from tape.
+ */
 
 char *extract_text(cdc_ctx_t *cd, char *name)
 {
@@ -530,7 +537,7 @@ char *extract_opl(cdc_ctx_t *cd, char *name)
 
 int do_xopt(TAPE *tap, int argc, char **argv)
 {
-	int rv = 0;
+	int ec = 0;
 	ssize_t nbytes;
 	cdc_ctx_t cd;
 	char *tbuf, *cbuf;
@@ -551,7 +558,7 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		nbytes = tap_readblock(tap, &tbuf);
 		if (nbytes < 0) {
 			if (nbytes == -2)
-				rv = 2;
+				ec = 2;
 			break;
 		}
 
@@ -564,7 +571,7 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
 		if (nchar < 0) {
-			rv = 2;
+			ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
@@ -605,11 +612,10 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		}
 
 		if (err) {
-			rv = 2;
+			ec = 2;
 			if (err[0])
 				fprintf(stderr, "%s/%s: %s\n", rectype[rt],
 					name, err);
-				
 		}
 
 		cdc_ctx_fini(&cd);
@@ -618,13 +624,15 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 	for (i = 0; i < argc; i++)
 		if (!found[i]) {
 			fprintf(stderr, "%s not found\n", argv[i]);
-			rv = 2;
+			ec = 2;
 		}
-	return rv;
+	return ec;
 }
 
 
-/*** Main program ***/
+/*
+ * Main program.
+ */
 
 char *prog;
 
@@ -656,7 +664,7 @@ void usage(int ec)
 
 void main(int argc, char **argv)
 {
-	int c, rv;
+	int c, ec;
 	unsigned op = 0;
 	char *ifile = NULL;
 	TAPE *tap;
@@ -763,13 +771,13 @@ void main(int argc, char **argv)
 	}
 
 	switch (op) {
-	    case OP_D:	rv = do_dopt(tap, argc-optind, argv+optind); break;
-	    case OP_R:	rv = do_ropt(tap); break;
-	    case OP_T:	rv = do_topt(tap); break;
-	    case OP_X:	rv = do_xopt(tap, argc-optind, argv+optind); break;
+	    case OP_D:	ec = do_dopt(tap, argc-optind, argv+optind); break;
+	    case OP_R:	ec = do_ropt(tap); break;
+	    case OP_T:	ec = do_topt(tap); break;
+	    case OP_X:	ec = do_xopt(tap, argc-optind, argv+optind); break;
 	}
 
 	tap_close(tap);
 
-	exit(rv);
+	exit(ec);
 }
