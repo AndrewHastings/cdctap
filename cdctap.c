@@ -40,7 +40,7 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 	char *tbuf, *cbuf;
 	rectype_t rt;
 	int i, nchar, ui;
-	char name[8], date[11], extra[100];
+	char name[8], date[11], extra[EXTRA_LEN+1];
 	char *found;
 	cdc_ctx_t cd;
 
@@ -158,7 +158,7 @@ int do_topt(TAPE *tap)
 	int ec = 0;
 	cdc_ctx_t cd;
 	int nchar, ui;
-	char name[8], date[11], extra[100];
+	char name[8], date[11], extra[EXTRA_LEN+1];
 	rectype_t rt;
 	int i, reclen;
 
@@ -544,7 +544,7 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 	int i, nchar, ui;
 	char *found;
 	rectype_t rt;
-	char name[8], date[11], extra[100];
+	char name[8], date[11], extra[EXTRA_LEN+1];
 	char *fn, *err;
 
 	found = alloca(argc);

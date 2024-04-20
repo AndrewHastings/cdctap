@@ -61,8 +61,10 @@ int un_to_ui(char *un)
 	for (vp = vtab; vp->val_un; vp++) {
 		match = 1;
 		for (i = 0; un[i] && un[i] != '/'; i++) {
-			if (toupper(un[i]) != vp->val_un[i])
+			if (toupper(un[i]) != vp->val_un[i]) {
 				match = 0;
+				break;
+			}
 		}
 		if (match)
 			break;

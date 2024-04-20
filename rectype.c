@@ -159,13 +159,14 @@ rectype_t id_record(char *bp, int cnt,
 				if (*sp != 055)
 					break;
 
-			copy_dc(sp, extra, bp + 150 - sp, DC_NONUL);
+			copy_dc(sp, extra, MIN(EXTRA_LEN, bp + 150 - sp),
+				DC_NONUL);
 
 			/* remove "COPYRIGHT" and trailing spaces */
 			cp = strstr(extra, "COPYRIGHT");
 			if (!cp)
 				cp = extra + strlen(extra);
-			for (cp--; *cp == ' '; cp--)
+			for (cp--; cp >= extra && *cp == ' '; cp--)
 				;
 			*++cp = '\0';
 		}

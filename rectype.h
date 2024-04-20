@@ -35,4 +35,6 @@ extern char *rectype[];
 extern rectype_t id_record(char *bp, int cnt, char *name,
 			   char *date, char *extra, int *ui);
 
+#define EXTRA_LEN 120
+
 #endif /* _RECTYPE_H */
