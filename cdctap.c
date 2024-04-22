@@ -27,6 +27,7 @@ int debug = 0;
 int verbose = 0;
 
 static int ascii = 0;
+static int lfmt = 0;
 
 
 /*
@@ -168,7 +169,7 @@ int do_topt(TAPE *tap)
 	char *tbuf, *cbuf;
 	int ec = 0;
 	cdc_ctx_t cd;
-	int nchar, ui;
+	int nchar, ui, in_ulib = 0;
 	char name[8], date[11], extra[EXTRA_LEN+1];
 	rectype_t rt;
 	int i, reclen;
@@ -212,6 +213,20 @@ int do_topt(TAPE *tap)
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
 		reclen = cdc_skipr(&cd);
+
+		/* ULIB: omit contents unless -l */
+		if (!lfmt) {
+			/* skip until OPLD */
+			if (in_ulib) {
+				if (rt == RT_OPLD)
+					in_ulib = 0;
+				cdc_ctx_fini(&cd);
+				continue;
+			}
+
+			if (rt == RT_ULIB)
+				in_ulib = 1;
+		}
 
 		/* print record info */
 		if (verbose) {
@@ -663,6 +678,7 @@ void usage(int ec)
 	fprintf(stderr, "modifiers:\n");
 	fprintf(stderr, " -3   use 63-character set (default 64)\n");
 	fprintf(stderr, " -a   extract in ASCII mode (6/12 display code)\n");
+	fprintf(stderr, " -l   list contents of user libraries\n");
 	fprintf(stderr, " -O   extract to stdout (default write to file)\n");
 	fprintf(stderr, " -v   verbose output\n");
 	fprintf(stderr, " -vv  more verbose output\n");
@@ -685,7 +701,7 @@ void main(int argc, char **argv)
 	prog = strrchr(argv[0], '/');
 	prog = prog ? prog+1 : argv[0];
 
-	while ((c = getopt(argc, argv, "3aDdf:hOrtvx")) != -1) {
+	while ((c = getopt(argc, argv, "3aDdf:hlOrtvx")) != -1) {
 		switch (c) {
 		    case '3':
 			dcmap[063] = ':';
@@ -710,6 +726,10 @@ void main(int argc, char **argv)
 
 		    case 'h':
 			usage(0);
+			break;
+
+		    case 'l':
+			lfmt++;
 			break;
 
 		    case 'O':
