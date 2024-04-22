@@ -15,10 +15,16 @@ typedef enum {
     RT_EOF,	/* EOF */
     RT_TEXT,	/* Unrecognized */
     RT_PROC,	/* CCL procedure */
+    RT_DATA,	/* Arbitrary data */
     RT_7700,	/* 7700 table, unknown file type */
-    RT_OPL,	/* Modify OPL deck */
-    RT_OPLC,	/* Modify OPL common deck */
-    RT_OPLD,	/* Modify OPL directory */
+    RT_ACF,	/* MODIFY compressed compile file */
+    RT_OPL,	/* MODIFY OPL deck */
+    RT_OPLC,	/* MODIFY OPL common deck */
+    RT_OPLD,	/* MODIFY OPL directory */
+    RT_UCF,	/* UPDATE compressed compile file */
+    RT_UPL,	/* UPDATE PL */
+    RT_UPLR,	/* UPDATE random PL */
+    RT_UPLD,	/* UPDATE random PL directory */
     RT_PP,	/* PP program */
     RT_PPU,	/* PPU program */
     RT_PPL,	/* 16-bit PP program */
@@ -26,7 +32,10 @@ typedef enum {
     RT_REL,	/* Relocatable subprogram */
     RT_ABS,	/* Absolute program */
     RT_OVL,	/* Overlay */
+    RT_SDR,	/* Special deadstart record */
     RT_CAP,	/* Fast dynamic load capsule */
+    RT_USER,	/* User-defined record (7500 table) */
+    RT_DUMPPF,	/* UMinn DUMPPF */
     RT_PFLBL,	/* PFDUMP label */
     RT_PFDUMP,	/* PFDUMP file */
 } rectype_t;

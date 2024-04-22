@@ -22,10 +22,16 @@ char *rectype[] = {
     "EOF",
     "TEXT",
     "PROC",
+    "DATA",
     "7700",
+    "ACF",
     "OPL",
     "OPLC",
     "OPLD",
+    "UCF",
+    "UPL",
+    "UPLR",
+    "UPLD",
     "PP",
     "PPU",
     "PPL",
@@ -33,18 +39,29 @@ char *rectype[] = {
     "REL",
     "ABS",
     "OVL",
+    "SDR",
     "CAP",
+    "USER",
+    "DUMP",
     "PFDUMP",
     "PFDUMP",
+};
+
+static char *uplstr[] = {
+    "\003\017\015\004\005\003\013",	/* COMDECK */
+    "\004\005\003\013",			/* DECK */
+    "\031\001\016\013",			/* YANK */
 };
 
 
 rectype_t id_record(char *bp, int cnt,
 		    char *name, char *date, char *extra, int *ui)
 {
-	int hdr, len;
+	int hdr, len, i;
+	char *cp;
 	char *np = bp;
 	int ncnt = cnt;
+	int has_7700 = 0;
 
 	name[0] = date[0] = extra[0] = 0;
 	*ui = -1;
@@ -54,15 +71,31 @@ rectype_t id_record(char *bp, int cnt,
 		return RT_EMPTY;
 
 	/* check for ".PROC," */
-	if (strncmp(bp, "\057\020\022\017\003\056", 6) == 0) {
+	if (memcmp(bp, "\057\020\022\017\003\056", 6) == 0) {
 		copy_dc(bp+6, name, MIN(7, cnt-6), DC_ALNUM);
 		copy_dc(bp, extra, MIN(EXTRA_LEN, cnt), DC_TEXT);
 		return RT_PROC;
 	}
 
+	/* check for sequential OLDPL: "CHECK" */
+	if (memcmp(bp, "\003\010\005\003\013", 5) == 0 &&
+	    (bp[5] & 076) == 0) {
+		strcpy(name, "OLDPL");
+		if (bp[6] >= 033 && bp[6] < 045)
+			sprintf(extra, "CSET=%c", bp[6] - 033 + '0');
+		return RT_UPL;
+	}
+
+	/* check for random OLDPL directory: "YANK$$$" */
+	if (memcmp(bp, "\031\001\016\013\053\053\053\000\000", 9) == 0 &&
+	    (bp[9] & 076) == 0) {
+		strcpy(name, bp[9] ? "DIR" : "DECKS");
+		return RT_UPLD;
+	}
+
 	/* check for PFDUMP format */
 	if (cnt >= 20) {
-		int i, eos = 0;
+		int eos = 0;
 		int cw = (bp[7] << 12) | (bp[8] << 6) | bp[9];
 
 		/* end of dump marker */
@@ -125,42 +158,54 @@ rectype_t id_record(char *bp, int cnt,
 		copy_dc(bp+10, name, 7, DC_NOSPC);
 		copy_dc(bp+20, date, 10, DC_NONUL);
 
+		/* UPDATE compressed compile? */
+		if (len == 0) {
+			ncnt = cnt > 30 ? cnt-30 : 0;
+			copy_dc(bp+30, extra, MIN(EXTRA_LEN, ncnt), DC_TEXT);
+			return RT_UCF;
+		}
+
+		/* MODIFY compressed compile? */
+		if (bp[17] || bp[18] || bp[19]) {
+			ncnt = cnt > 30 ? cnt-30 : 0;
+			copy_dc(bp+30, extra, MIN(EXTRA_LEN, ncnt), DC_TEXT);
+			return RT_ACF;
+		}
+
 		/* find comment field */
 		if (len >= 14) {
-			char *cp, *sp;
-
 			/* old: starts in word 2. */
 			/* new: word 2 is time, comment starts in word 7 */
-			sp = bp + 30;
-			if (is_dc_ts(sp, 057))  /* '.' */
-				sp = bp + 80;
+			cp = bp + 30;
+			if (is_dc_ts(cp, 057))  /* '.' */
+				cp = bp + 80;
 
 			/* skip over date, time, space or zero words */
-			for ( ; sp < bp + 110; sp += 10) {
+			for ( ; cp < bp + 110; cp += 10) {
 
 				/* date or time? */
-				if (is_dc_ts(sp, 050))  /* '/' */
+				if (is_dc_ts(cp, 050))  /* '/' */
 					continue;
-				if (is_dc_ts(sp, 057))  /* '.' */
+				if (is_dc_ts(cp, 057))  /* '.' */
 					continue;
 
 				/* all zero? */
-				if (memcmp(sp, "\0\0\0\0\0\0\0\0\0\0", 10) == 0)
+				if (memcmp(cp, "\0\0\0\0\0\0\0\0\0\0", 10) == 0)
 					continue;
 
 				/* all spaces? */
-				if (memcmp(sp,
+				if (memcmp(cp,
 				     "\055\055\055\055\055\055\055\055\055\055",
 					   10) != 0)
 					break;
 			}
 
 			/* skip any remaining leading spaces */
-			for ( ; sp < bp + 150; sp++)
-				if (*sp != 055)
+			for ( ; cp < bp + 150; cp++)
+				if (*cp != 055)
 					break;
 
-			copy_dc(sp, extra, MIN(EXTRA_LEN, bp + 150 - sp),
+			copy_dc(cp, extra, MIN(EXTRA_LEN, bp + 150 - cp),
 				DC_NONUL);
 
 			/* remove "COPYRIGHT" and trailing spaces */
@@ -172,6 +217,7 @@ rectype_t id_record(char *bp, int cnt,
 			*++cp = '\0';
 		}
 
+		has_7700 = 1;
 		np += len*10 + 10;
 		ncnt -= len*10 + 10;
 		hdr = (np[0] << 6) | np[1];
@@ -189,9 +235,28 @@ rectype_t id_record(char *bp, int cnt,
 		return RT_PP;
 	}
 
+	/* skip over optional LDSET table */
+	if (hdr == 07000 && len) {
+		if (len*10 + 10 > ncnt)
+			return bp != np ? RT_7700 : RT_DATA;
+
+		np += len*10 + 10;
+		ncnt -= len*10 + 10;
+		hdr = (np[0] << 6) | np[1];
+		len = (np[2] << 6) | np[3];
+	}
+
 	switch (hdr) {
 	    case 03400:
 		return RT_REL;
+
+	    case 05000:
+		/* SDR if no 7700 table */
+		if (bp == np) {
+			copy_dc(bp+10, name, 7, DC_NOSPC);
+			return RT_SDR;
+		}
+		return RT_OVL;
 
 	    case 05200:
 		return RT_PPU;
@@ -208,11 +273,26 @@ rectype_t id_record(char *bp, int cnt,
 		/* ABS if 00,00 overlay */
 		if (!np[4] && !np[5])
 			return RT_ABS;
-		/* fall through */
-	    case 05000:
 		return RT_OVL;
 
 	    case 06000:
+		/* check for random OLDPL */
+		cp = np + 11;
+		for (i = 0; i < 3; i++) {
+			len = strlen(uplstr[i]);
+			if (memcmp(cp, uplstr[i], len) == 0)
+				break;
+		}
+		if (i < 3) {
+			cp += len;	/* skip over COMDECK, DECK */
+			if (!cp[0])	/* some decks have 0004 separator */
+				cp += 2;
+			while (cp+7 < bp+cnt && (*cp == 055 || *cp == 056))
+				cp++;	/* skip over commas, spaces */
+			copy_dc(cp, name, 7, DC_NOSPC);
+			copy_dc(uplstr[i], extra, 7, DC_NONUL);
+			return RT_UPLR;
+		}
 		return RT_CAP;
 
 	    case 06100:
@@ -227,12 +307,24 @@ rectype_t id_record(char *bp, int cnt,
 	    case 07002:
 		return RT_OPLC;
 
+	    case 07400:
+		if (ncnt >= 170 && len >= 16) {
+			*ui = (np[97] << 12) | (np[98] << 6) | np[99];
+			sprintf(date, "%02d/%02d/%02d.",
+				np[124]+70, np[125], np[126]);
+			format_catentry(extra, np+90);
+		}
+		return RT_DUMPPF;
+
+	    case 07500:
+		return RT_USER;
+
 	    case 07600:
 		return RT_ULIB;
 	}
 
 	/* 7700 table but unrecognized type? */
-	if (bp != np)
+	if (has_7700)
 		return RT_7700;
 
 	copy_dc(bp, name, 7, DC_NOSPC);
