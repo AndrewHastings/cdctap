@@ -95,6 +95,7 @@ int cdc_ctx_init(cdc_ctx_t *cd, TAPE *tap, char *tbuf, int nbytes, char **cbufp)
 	cd->cd_tap = tap;
 
 	if (tbuf) {
+		*cbufp = NULL;
 		if (tap_is_write(tap)) {
 			fprintf(stderr, "cdc_ctx_init: attempt to read "
 					"tape open for writing\n");
@@ -113,13 +114,18 @@ int cdc_ctx_init(cdc_ctx_t *cd, TAPE *tap, char *tbuf, int nbytes, char **cbufp)
 			fprintf(stderr,
 				"cdc_ctx_init: unpack6: expected %d, got %d\n",
 				nwords * 10, rv);
+			free(cd->cd_cbuf);
+			cd->cd_cbuf = NULL;
 			return -2;
+		}
+		if (rv == 8 && (cd->cd_cbuf[7] & 017) == 017) {
+			free(cd->cd_cbuf);
+			cd->cd_cbuf = NULL;
+			return -1;
 		}
 		cd->cd_nchar = cd->cd_nleft = nwords * 10;
 		cd->cd_reclen = nwords;
 		*cbufp = cd->cd_cbuf;
-		if (rv == 8 && (cd->cd_cbuf[7] & 017) == 017)
-			return -1;
 	} else {
 		if (!tap_is_write(tap)) {
 			fprintf(stderr, "cdc_ctx_init: attempt to write "
