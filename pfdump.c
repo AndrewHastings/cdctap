@@ -258,7 +258,8 @@ void analyze_pfdump(cdc_ctx_t *cd)
 char *extract_pfdump(cdc_ctx_t *cd, char *name)
 {
 	TAPE *ot = NULL;
-	char nbuf[16], fname[24];
+	char nbuf[16], fname[24], cname[8];
+	char *np = name;
 	char *cp, *dp;
 	int ui, btype, flag;
 	int i, len;
@@ -281,6 +282,15 @@ char *extract_pfdump(cdc_ctx_t *cd, char *name)
 			cp = cdc_getword(cd);
 			if (!cp)
 				goto err;
+			if (ot) {
+				cdc_ctx_fini(&ocd);
+				tap_close(ot);
+				copy_dc(cp, cname, 7, DC_ALNUM);
+				fprintf(stderr,
+					"%s: multiple PFDUMP catalog entries, "
+					"found entry for %s\n", name, cname);
+				np = cname;
+			}
 			ui = (cp[7] << 12) | (cp[8] << 6) | cp[9];
 
 			/* skip words 2-3 */
@@ -305,13 +315,13 @@ char *extract_pfdump(cdc_ctx_t *cd, char *name)
 			else
 				sprintf(nbuf, "%o", ui);
 			if (mkdir(nbuf, 0777) < 0 && errno != EEXIST) {
-				fprintf(stderr, "%s: mkdir: ", name);
+				fprintf(stderr, "%s: mkdir: ", np);
 				perror(nbuf);
 				(void) cdc_skipr(cd);
 				return "";
 			}
 			strcat(nbuf, "/");
-			strcat(nbuf, name);
+			strcat(nbuf, np);
 
 			ot = tap_open(nbuf, fname);
 			if (!ot) {
