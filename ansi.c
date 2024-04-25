@@ -11,15 +11,56 @@
 #include <string.h>
 #include <ctype.h>
 #include "ansi.h"
+#include "cdctap.h"
 
 
-int is_label(char *buf, int nbytes)
+static char ebcdic_map[] =
+    /* 0 */  "~~~~~~~~~~~~~~~~"    /* ignore non-print for now */
+    /* 1 */  "~~~~~~~~~~~~~~~~"
+    /* 2 */  "~~~~~~~~~~~~~~~~"
+    /* 3 */  "~~~~~~~~~~~~~~~~"    /* end of non-print */
+    /* 4 */  " ~~~~~~~~~~.<(+|"
+    /* 5 */  "&~~~~~~~~~!$*);~"
+    /* 6 */  "-/~~~~~~~~|,%_>?"
+    /* 7 */  "~~~~~~~~~`:#@'=\""
+    /* 8 */  "~abcdefghi~~~~~~"
+    /* 9 */  "~jklmnopqr~~~~~~"
+    /* A */  "~~stuvwxyz~~~~~~"    /* A1 = EBCDIC tilde */
+    /* B */  "^~~~~~~~~~[]~~~~"
+    /* C */  "{ABCDEFGHI~~~~~~"
+    /* D */  "}JKLMNOPQR~~~~~~"
+    /* E */  "\\~STUVWXYZ~~~~~~"
+    /* F */  "0123456789~~~~~~";
+
+
+int is_label(char *buf, int nbytes, char *lbuf)
 {
-	return nbytes == 80 &&
-	       (strncmp(buf, "VOL", 3) == 0 ||
-	        strncmp(buf, "HDR", 3) == 0 ||
-	        strncmp(buf, "EOV", 3) == 0 ||
-	        strncmp(buf, "EOF", 3) == 0);
+	int i;
+
+	if (nbytes != 80)
+		return 0;
+
+	/* ASCII label? */
+	if (strncmp(buf, "VOL", 3) == 0 ||
+	    strncmp(buf, "HDR", 3) == 0 ||
+	    strncmp(buf, "EOV", 3) == 0 ||
+	    strncmp(buf, "EOF", 3) == 0) {
+		memcpy(lbuf, buf, 80);
+		return 1;
+	}
+
+	/* Try EBCDIC */
+	if (!(buf[0] & 0x80))
+		return 0;
+	for (i = 0; i < 80; i++)
+		lbuf[i] = ebcdic_map[(unsigned char)buf[i]];
+	if (strncmp(lbuf, "VOL", 3) == 0 ||
+	    strncmp(lbuf, "HDR", 3) == 0 ||
+	    strncmp(lbuf, "EOV", 3) == 0 ||
+	    strncmp(lbuf, "EOF", 3) == 0)
+		return 1;
+
+	return 0;
 }
 
 

@@ -42,6 +42,7 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 	rectype_t rt;
 	int i, nchar, ui;
 	char name[8], date[11], extra[EXTRA_LEN+1];
+	char lbuf[81];
 	char *found;
 	cdc_ctx_t cd;
 
@@ -63,7 +64,7 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 		/* skip tape marks and tape labels */
 		if (nbytes == 0)
 			continue;
-		if (is_label(tbuf, nbytes))
+		if (is_label(tbuf, nbytes, lbuf))
 			continue;
 
 		/* unpack to 6-bit characters and identify */
@@ -118,6 +119,7 @@ int do_ropt(TAPE *tap)
 {
 	ssize_t nbytes;
 	int nchar, rv, ec = 0;
+	char lbuf[81];
 	char *tbuf, *cbuf = NULL;
 
 	while (1) {
@@ -132,8 +134,8 @@ int do_ropt(TAPE *tap)
 			continue;
 		}
 		printf("%5ld ", nbytes);
-		if (is_label(tbuf, nbytes))
-			print_label(tbuf);
+		if (is_label(tbuf, nbytes, lbuf))
+			print_label(lbuf);
 		else {
 			nchar = nbytes*8/6;
 			cbuf = realloc(cbuf, nchar);
@@ -171,6 +173,7 @@ int do_topt(TAPE *tap)
 	cdc_ctx_t cd;
 	int nchar, ui, in_ulib = 0;
 	char name[8], date[11], extra[EXTRA_LEN+1];
+	char lbuf[81];
 	rectype_t rt;
 	int i, reclen;
 
@@ -187,14 +190,15 @@ int do_topt(TAPE *tap)
 			continue;
 		}
 
-		if (is_label(tbuf, nbytes)) {
-			switch (tbuf[0]) {
+		if (is_label(tbuf, nbytes, lbuf)) {
+			switch (lbuf[0]) {
 			    case 'V':
-				print_lfield("Catalog of ", tbuf+4, tbuf+9);
+				print_lfield("Catalog of ", lbuf+4, lbuf+9);
 				break;
 
 			    case 'H':
-				print_jdate(" ", tbuf+41);
+				print_lfield("\nCatalog of ", lbuf+4, lbuf+20);
+				print_jdate(" ", lbuf+41);
 				putchar('\n');
 				break;
 
@@ -572,6 +576,7 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 	char *found;
 	rectype_t rt;
 	char name[8], date[11], extra[EXTRA_LEN+1];
+	char lbuf[81];
 	char *fn, *err;
 
 	found = alloca(argc);
@@ -592,7 +597,7 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		/* skip tape marks and tape labels */
 		if (nbytes == 0)
 			continue;
-		if (is_label(tbuf, nbytes))
+		if (is_label(tbuf, nbytes, lbuf))
 			continue;
 
 		/* unpack to 6-bit characters and identify */
