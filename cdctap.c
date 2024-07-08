@@ -69,9 +69,8 @@ int do_dopt(TAPE *tap, int argc, char **argv)
 
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
-		if (nchar < 0) {
-			if (nchar == -2)
-				ec = 2;
+		if (nchar == -2) {
+			ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
@@ -602,9 +601,8 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 
 		/* unpack to 6-bit characters and identify */
 		nchar = cdc_ctx_init(&cd, tap, tbuf, nbytes, &cbuf);
-		if (nchar < 0) {
-			if (nchar == -2)
-				ec = 2;
+		if (nchar == -2) {
+			ec = 2;
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
