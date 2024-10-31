@@ -123,7 +123,7 @@ void print_jdate(char *txt, char *sp)
 
 	jday = 100*(sp[3]-'0') + 10*(sp[4]-'0') + sp[5]-'0';
 	for (i = 0; i < 12; i++) {
-		if (jday - days[i] < 0)
+		if (jday - days[i] <= 0)
 			break;
 		jday -= days[i];
 	}
