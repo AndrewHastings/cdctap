@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-CFLAGS=-g -fsanitize=address
+CFLAGS=-g -fsanitize=address -Werror -Wunused-variable
 
 HDRS = ansi.h cdctap.h dcode.h ifmt.h outfile.h pfdump.h rectype.h simtap.h
 OBJS = ansi.o cdctap.o dcode.o ifmt.o outfile.o pfdump.o rectype.o simtap.o

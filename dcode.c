@@ -126,9 +126,7 @@ void copy_dc(char *sp, char *dp, int max, int flags)
 			for (k = i+1; k < j; k++)
 				if (sp[k])
 					break;
-			dprint(("copy_dc: i=%d j=%d k=%d dp %p\n", i, j, k, dp));
 			if (k == j) {	   /* all null, EOL found */
-				dprint(("copy_dc: EOL\n"));
 				if (j + 2 < max) {
 					*dp++ = ' ';
 					*dp++ = ' ';

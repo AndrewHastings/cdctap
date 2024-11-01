@@ -25,6 +25,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <alloca.h>
 #include "ansi.h"
 #include "dcode.h"
 #include "ifmt.h"
