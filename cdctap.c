@@ -206,6 +206,8 @@ int do_topt(TAPE *tap)
 			switch (lbuf[0]) {
 			    case 'V':
 				print_lfield("Catalog of ", lbuf+4, lbuf+9);
+				if (print_lfield(" (", lbuf+37, lbuf+50))
+					putchar(')');
 				break;
 
 			    case 'H':
@@ -619,6 +621,8 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 			break;
 		}
 		rt = id_record(cbuf, nchar, name, date, extra, &ui);
+		if (!name[0])
+			strcpy(name, "noname");
 
 		/* check for name match */
 		for (i = 0; i < argc; i++)

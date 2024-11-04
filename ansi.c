@@ -76,7 +76,7 @@ int is_label(char *buf, int nbytes, char *lbuf)
 }
 
 
-void print_lfield(char *txt, char *sp, char *ep)
+int print_lfield(char *txt, char *sp, char *ep)
 {
 	char c, prev = '\0';
 
@@ -86,7 +86,7 @@ void print_lfield(char *txt, char *sp, char *ep)
 	while (ep >= sp && *ep == ' ')
 		ep--;
 	if (sp > ep)
-		return;
+		return 0;
 
 	printf("%s", txt);
 	while (sp <= ep) {
@@ -97,6 +97,7 @@ void print_lfield(char *txt, char *sp, char *ep)
 		prev = c;
 		sp++;
 	}
+	return 1;
 }
 
 
