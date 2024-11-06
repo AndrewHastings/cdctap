@@ -150,7 +150,8 @@ rectype_t id_record(char *bp, int cnt,
 				/* convert modification date if present */
 				if (cnt >= 50 && (cw & 0777) >= 4)
 					sprintf(date, "%02d/%02d/%02d.",
-						bp[44]+70, bp[45], bp[46]);
+						(bp[44]+70) % 100,
+						bp[45], bp[46]);
 
 				/* extract additional fields if present */
 				if (cnt >= 170 && (cw & 0777) >= 16)
@@ -323,7 +324,7 @@ rectype_t id_record(char *bp, int cnt,
 		if (ncnt >= 170 && len >= 16) {
 			*ui = (np[97] << 12) | (np[98] << 6) | np[99];
 			sprintf(date, "%02d/%02d/%02d.",
-				np[124]+70, np[125], np[126]);
+				(np[124]+70) % 100, np[125], np[126]);
 			format_catentry(extra, np+90);
 		}
 		return RT_DUMPPF;
