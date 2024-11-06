@@ -28,5 +28,6 @@ extern void format_pflabel(char *dp, char *sp);
 extern void format_catentry(char *dp, char *sp);
 extern void analyze_pfdump(cdc_ctx_t *cd);
 extern char *extract_pfdump(cdc_ctx_t *cd, char *name);
+extern char *extract_dumppf(cdc_ctx_t *cd, char *name);
 
 #endif /* _PFDUMP_H */

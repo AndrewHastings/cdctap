@@ -19,7 +19,8 @@ code are options.
 with or without sequence numbers. 6/12 display code translation is
 not supported for these record types.
 
-- PFDUMP records: extracted as SIMH-format tape images in CDC "I" format.
+- PFDUMP and UMinn DUMPPF/ARCHIVE records: extracted as SIMH-format tape
+images in CDC "I" format.
 You can feed the resulting tape image through **cdctap** again to
 view and extract the contents of the permanent file.
 **cdctap** creates a separate directory per user index, e.g., the extracted
@@ -36,8 +37,8 @@ named "CIO" to "CIO.1.txt".
 You can specify the record names to be extracted using shell-type wildcards,
 e.g. "cmrd\*". **cdctap** ignores upper/lower case when matching record names.
 
-For PFDUMP records, you can limit extraction to a particular user index
-via the syntax "*ui*/*recname*". Also, **cdctap** recognizes a small set
+For PFDUMP and DUMPPF records, you can limit extraction to a particular user
+index via the syntax "*ui*/*recname*". Also, **cdctap** recognizes a small set
 of built-in user number to user index translations, e.g., "SYSTEMX" for
 user index 377777.
 

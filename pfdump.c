@@ -16,7 +16,7 @@
  */
 
 /*
- * PDFUMP-related routines.
+ * PDFUMP- and DUMPPF-related routines.
  */
 
 #include <sys/stat.h>
@@ -395,4 +395,160 @@ char *extract_pfdump(cdc_ctx_t *cd, char *name)
 	}
 	(void) cdc_skipr(cd);
 	return "EOR while extracting PFDUMP";
+}
+
+
+char *extract_dumppf(cdc_ctx_t *cd, char *name)
+{
+	TAPE *ot = NULL;
+	char nbuf[16], fname[24];
+	char *cp, *dp;
+	int i, len, ui = -1;
+	int pru_size;
+	struct tm tm;
+	cdc_ctx_t ocd;
+
+	dprint(("extract_dumppf: %s\n", name));
+	memset(&tm, 0, sizeof tm);
+	tm.tm_hour = 12;
+	nbuf[0] = '\0';
+
+	/* read 7700 table, extract date */
+	cp = cdc_getword(cd);
+	if (!cp || cp[0] != 077 || cp[1] != 0)
+		return "no 7700 table";
+	len = (cp[2] << 6) | cp[3];
+	dprint(("extract_dumppf: 7700 len=%d\n", len));
+
+	if (len >= 2) {
+		char date[11];
+
+		/* skip over name */
+		if (!cdc_skipwords(cd, 1))
+			return "short 7700 table";
+
+		/* extract date */
+		if (!(cp = cdc_getword(cd)))
+			return "EOR reading date from 7700 table";
+		copy_dc(cp, date, 10, DC_NONUL);
+		len -= 2;
+
+		(void) parse_date(date, &tm);
+	}
+
+	if (!cdc_skipwords(cd, len))
+		return "EOR skipping over 7700 table";
+
+	/* read 7400 table, extract UI and mdate if catentry present */
+	cp = cdc_getword(cd);
+	if (!cp || cp[0] != 074 || cp[1] != 0)
+		return "no 7400 table";
+	len = (cp[2] << 6) | cp[3];
+	dprint(("extract_dumppf: 7400 len=%d\n", len));
+
+	if (len >= 16) {
+		/* advance to catalog entry */
+		if (!cdc_skipwords(cd, 8))
+			return "short 7400 table";
+
+		/* catentry word 1: name & ui */
+		cp = cdc_getword(cd);
+		if (!cp)
+			return "EOR reading UI from 7400 table";
+		ui = (cp[7] << 12) | (cp[8] << 6) | cp[9];
+
+		/* skip catentry words 2-3 */
+		if (!cdc_skipwords(cd, 2))
+			return "short 7400 table";
+
+		/* catentry word 4: modification date/time */
+		cp = cdc_getword(cd);
+		if (!cp)
+			return "EOR reading modification time from 7400 table";
+		tm.tm_year  = cp[4] + 70;
+		tm.tm_mon   = cp[5] - 1;
+		tm.tm_mday  = cp[6];
+		tm.tm_hour  = cp[7];
+		tm.tm_min   = cp[8];
+		tm.tm_sec   = cp[9];
+		tm.tm_isdst = -1;
+
+		len -= 12;
+	}
+	if (!cdc_skipwords(cd, len))
+		return "EOR skipping over 7400 table";
+
+	if (ui >= 0) {
+		/* use subdir for UN (if known) or ui */
+		if ((dp = ui_to_un(ui)) != NULL)
+			sprintf(nbuf, "%s", dp);
+		else
+			sprintf(nbuf, "%o", ui);
+		if (mkdir(nbuf, 0777) < 0 && errno != EEXIST) {
+			fprintf(stderr, "%s: mkdir: ", name);
+			perror(nbuf);
+			(void) cdc_skipr(cd);
+			return "";
+		}
+		strcat(nbuf, "/");
+	}
+	strcat(nbuf, name);
+
+	ot = tap_open(nbuf, fname);
+	if (!ot) {
+		(void) cdc_skipr(cd);
+		return "";
+	}
+	if (cdc_ctx_init(&ocd, ot, NULL, 0, NULL) < 0) {
+		tap_close(ot);
+		(void) cdc_skipr(cd);
+		return "";
+	}
+
+	/* iterate through READCW-delimited data */
+	while (cp = cdc_getword(cd)) {
+
+		/* parse control word header; len in 24-bit PP words */
+		len = (cp[6] << 18) | (cp[7] << 12) | (cp[8] << 6) | cp[9];
+		pru_size = (cp[1] << 12) | (cp[2] << 6) | cp[3];
+		dprint(("extract_dumppf: CW PRU=%d len=%d\n", pru_size, len));
+
+		/* copy data */
+		for (i = len; i >= 5; i -= 5) {
+			cp = cdc_getword(cd);
+			if (!cp)
+				goto err;
+			if (cdc_putword(&ocd, cp) < 0)
+				goto err;
+		}
+		if (i != 0) {
+			fprintf(stderr,
+				"%s: CW length %d has partial CM word\n",
+				name, len);
+			goto err;
+		}
+
+		/* process control word trailer */
+		cp = cdc_getword(cd);
+		if (!cp)
+			goto err;
+		dprint(("extract_dumppf: CW level 0%02o%02o\n", cp[0], cp[1]));
+		if (len < pru_size * 5)
+			cdc_writer(&ocd);
+		if (cp[0] == 0 && cp[1] == 017)
+			cdc_writef(&ocd);
+
+	}
+
+	cdc_ctx_fini(&ocd);
+	tap_close(ot);
+	if (tm.tm_mday)
+		set_mtime(fname, &tm);
+	return NULL;
+
+    err:
+	cdc_ctx_fini(&ocd);
+	tap_close(ot);
+	(void) cdc_skipr(cd);
+	return "EOR while extracting DUMPPF";
 }

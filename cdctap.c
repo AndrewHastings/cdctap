@@ -649,6 +649,10 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 			err = extract_opl(&cd, fn);
 			break;
 
+		    case RT_DUMPPF:
+			err = extract_dumppf(&cd, fn);
+			break;
+
 		    case RT_PFDUMP:
 			err = extract_pfdump(&cd, fn);
 			break;

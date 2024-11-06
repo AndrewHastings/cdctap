@@ -30,6 +30,8 @@
 #define CDC_CBUFSZ      (512*10)
 #define CDC_TBUFSZ      (CDC_CBUFSZ*6/8+6)
 
+int cdc_flushblock(cdc_ctx_t *cd, int eof);
+
 
 int unpack6(char *dst, char *src, int nbytes)
 {
@@ -195,6 +197,10 @@ int cdc_ctx_init(cdc_ctx_t *cd, TAPE *tap, char *tbuf, int nbytes, char **cbufp)
 
 void cdc_ctx_fini(cdc_ctx_t *cd)
 {
+	if (tap_is_write(cd->cd_tap) && cd->cd_nchar) {
+		dprint(("cdc_ctx_fini: %d char unwritten\n", cd->cd_nchar));
+		cdc_flushblock(cd, 0);
+	}
 	if (cd->cd_tbuf)
 		free(cd->cd_tbuf);
 	if (cd->cd_cbuf)

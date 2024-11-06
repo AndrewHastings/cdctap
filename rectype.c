@@ -118,15 +118,16 @@ rectype_t id_record(char *bp, int cnt,
 		int cw = (bp[7] << 12) | (bp[8] << 6) | bp[9];
 
 		/* first 2 words must have matching, valid names */
+		/* terminate loop early if not valid or not matching */
 		for (i = 0; i < 7; i++) {
-			if (bp[i] != bp[i+10] ||	/* no match */
-			    i > 36            ||	/* non-alphanumeric */
-			    eos && bp[i])		/* embedded null */
+			if (bp[i] != bp[i+10] ||    /* no match */
+			    i > 36            ||    /* non-alphanumeric */
+			    eos && bp[i])	    /* oops, embedded null */
 				break;
-			if (!bp[i])			/* null terminator */
+			if (!bp[i])		    /* possible end of name */
 				eos = 1;
 		}
-		dprint(("id_record: cw %06o\n", cw));
+		dprint(("id_record: PFDUMP cw %06o\n", cw));
 
 		/* label must have "PFDUMP" and proper control word */
 		if (memcmp(bp+10, "\020\006\004\025\015\020", 7) == 0 &&
