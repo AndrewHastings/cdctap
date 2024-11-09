@@ -105,15 +105,17 @@ rectype_t id_record(char *bp, int cnt,
 		return RT_UPLD;
 	}
 
+	/* end of PFDUMP marker? */
+	if (cnt == 10 &&
+	    memcmp(bp, "\000\000\000\000\000\000\000\007\070\000", 10) == 0) {
+		strcpy(extra, "end");
+		return RT_PFLBL;
+	}
+
 	/* check for PFDUMP format */
 	if (cnt >= 20) {
 		int eos = 0;
 		int cw = (bp[7] << 12) | (bp[8] << 6) | bp[9];
-
-		/* end of dump marker */
-		if (memcmp(bp, "\000\000\000\000\000\000\000\007\070\000",
-			   10) == 0 && cnt <= 20)
-			return RT_PFLBL;
 
 		/* first 2 words must have matching, valid names */
 		for (i = 0; i < 7; i++) {
