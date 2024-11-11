@@ -44,6 +44,7 @@ typedef enum {
     RT_REL,	/* Relocatable subprogram */
     RT_ABS,	/* Absolute program */
     RT_OVL,	/* Overlay */
+    RT_COS,	/* Chippewa OS CP program */
     RT_SDR,	/* Special deadstart record */
     RT_CAP,	/* Fast dynamic load capsule */
     RT_USER,	/* User-defined record (7500 table) */

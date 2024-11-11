@@ -38,6 +38,7 @@ int sout = 0;
 
 /* match pattern as "ui/pat" or "un/pat" or "pat" */
 /* returns pat if case-free exact match, name if wildcard match, or NULL */
+/* uses "name" as scratch buffer to remove '/' from return value */
 char *name_match(char *pattern, char *name, int ui)
 {
 	long want_ui;
@@ -59,11 +60,23 @@ char *name_match(char *pattern, char *name, int ui)
 	}
 
 	dprint(("name_match: pat=%s\n", pat));
+
 	if (strcasecmp(pat, name) == 0)
-		return pat;
-	if (fnmatch(pat, name, FNM_CASEFOLD) == 0)
-		return name;
-	return NULL;
+		strcpy(name, pat);
+	else if (fnmatch(pat, name, FNM_CASEFOLD) != 0)
+		return NULL;
+
+	/* remove '/' from name */
+	ep = name;
+	for (sp = name; *sp; sp++) {
+		if (*sp != '/')
+			*ep++ = *sp;
+	}
+	*ep = '\0';
+	if (name[0] == '\0')
+		strcpy(name, "null");
+
+	return name;
 }
 
 

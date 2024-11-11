@@ -51,6 +51,7 @@ char *rectype[] = {
     "REL",
     "ABS",
     "OVL",
+    "COS",
     "SDR",
     "CAP",
     "USER",
@@ -268,7 +269,7 @@ rectype_t id_record(char *bp, int cnt,
 
 	    case 05000:
 		/* SDR if no 7700 table */
-		if (bp == np) {
+		if (!has_7700) {
 			copy_dc(bp+10, name, 7, DC_NOSPC);
 			return RT_SDR;
 		}
@@ -342,6 +343,28 @@ rectype_t id_record(char *bp, int cnt,
 	/* 7700 table but unrecognized type? */
 	if (has_7700)
 		return RT_7700;
+
+	/*
+	 * Check for COS format per 60493300A Cyber Common Utilities:
+	 * - no 7700 table
+	 * - bit 59 == 0
+	 * - bit 17 == 0
+	 * - bits 16-0 nonzero
+	 * To avoid misidentifying TEXT records as COS, we apply an
+	 * additional heuristic: address in bits 17-0 < 010000.
+	 */
+	if (cnt >= 20 &&
+	    (bp[0] & 040) == 0 &&		/* bit 59 == 0 */
+	    !bp[7] && (bp[8] << 6) | bp[9]) {	/* 17-0 nonzero, < 010000 */
+		copy_dc(bp, name, 7, DC_ALNUM);
+
+		/* heuristic for PP vs CP: 3-char name, nonzero load addr */
+		if (!bp[3] && !bp[4] && !bp[5] && !bp[6] && (bp[10] || bp[11]))
+			return RT_PP;
+
+		copy_dc(bp, extra, MIN(EXTRA_LEN, cnt), DC_TEXT);
+		return RT_COS;
+	}
 
 	copy_dc(bp, name, 7, DC_NOSPC);
 	copy_dc(bp, extra, MIN(EXTRA_LEN, cnt), DC_TEXT);
