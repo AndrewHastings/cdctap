@@ -302,8 +302,8 @@ rectype_t id_record(char *bp, int cnt,
 		}
 		if (i < 3) {
 			cp += len;	/* skip over COMDECK, DECK */
-			if (!cp[0])	/* some decks have 0004 separator */
-				cp += 2;
+			if (!cp[0])	/* skip over compressed spaces */
+				cp += 2;		 /* e.g., 0004 */
 			while (cp+7 < bp+cnt && (*cp == 055 || *cp == 056))
 				cp++;	/* skip over commas, spaces */
 			copy_dc(cp, name, 7, DC_NOSPC);

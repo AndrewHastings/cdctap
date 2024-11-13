@@ -30,6 +30,7 @@
 #include "dcode.h"
 #include "ifmt.h"
 #include "outfile.h"
+#include "opl.h"
 #include "pfdump.h"
 #include "rectype.h"
 #include "simtap.h"
@@ -647,6 +648,14 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		    case RT_OPL:
 		    case RT_OPLC:
 			err = extract_opl(&cd, fn);
+			break;
+
+		    case RT_UPL:
+			err = extract_upl(&cd, fn);
+			break;
+
+		    case RT_UPLR:
+			err = extract_uplr(&cd, fn);
 			break;
 
 		    case RT_DUMPPF:

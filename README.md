@@ -15,9 +15,12 @@ contents and extracting items from the tape.
 64-character display code by default, but 63-character and 6/12 display
 code are options.
 
-- MODIFY OPL and OPLC records: latest revision extracted as ASCII text,
-with or without sequence numbers. 6/12 display code translation is
-not supported for these record types.
+- MODIFY OPL/OPLC and UPDATE sequential or random PL records: latest
+revision extracted as ASCII text, with or without sequence numbers.
+6/12 display code translation is not supported for these record types.
+For an UPDATE sequential PL, the entire PL is extracted as a single file.
+For an UPDATE random PL record, the sequence number field currently
+contains a synthetic identifier name.
 
 - PFDUMP and UMinn DUMPPF/ARCHIVE records: extracted as SIMH-format tape
 images in CDC "I" format.
