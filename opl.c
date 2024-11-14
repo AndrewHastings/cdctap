@@ -349,6 +349,10 @@ char *extract_upl(cdc_ctx_t *cd, char *name)
 		char *modname = "unknown";
 		char obuf[MAXLEN + 12];
 
+		/* checksum word? */
+		if (memcmp(cp, "\000\000\000\000\000", 5) == 0)
+			break;
+
 		active = cp[0] & 020;
 		wc = (cp[1] << 12) | (cp[2] << 6) | cp[3];
 		seq = (cp[4] << 12) | (cp[5] << 6) | cp[6];
@@ -370,7 +374,7 @@ char *extract_upl(cdc_ctx_t *cd, char *name)
 			continue;
 		}
 
-		dprint(("extract_uplr: line %s:%d wc=%d\n", modname, seq, wc));
+		dprint(("extract_upl: line %s:%d wc=%d\n", modname, seq, wc));
 
 		/* process compressed text */
 		wc = expand_text(cd, wc, obuf, flags);
