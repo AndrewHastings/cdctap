@@ -16,12 +16,13 @@
  */
 
 /*
- * UPDATE PL routines.
+ * MODIFY and UPDATE PL routines.
  */
 
 #ifndef _OPL_H
 #define _OPL_H 1
 
+extern char *extract_opl(cdc_ctx_t *cd, char *name);
 extern char *extract_upl(cdc_ctx_t *cd, char *name);
 extern char *extract_uplr(cdc_ctx_t *cd, char *name);
 
