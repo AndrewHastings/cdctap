@@ -107,7 +107,7 @@ void set_mtime(char *fname, struct tm *tm)
 {
 	struct timeval times[2];
 
-	if (!fname[0])
+	if (!fname[0] || !tm->tm_mday)
 		return;
 
 	tm->tm_isdst = -1;

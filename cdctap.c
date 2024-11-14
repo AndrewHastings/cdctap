@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <alloca.h>
 #include "ansi.h"
@@ -292,7 +294,7 @@ int do_topt(TAPE *tap)
  * -x: extract files from tape.
  */
 
-char *extract_text(cdc_ctx_t *cd, char *name)
+char *extract_text(cdc_ctx_t *cd, char *name, struct tm *tm)
 {
 	FILE *of;
 	char fname[16];
@@ -346,6 +348,7 @@ char *extract_text(cdc_ctx_t *cd, char *name)
 		putc(dcmap[0], of);
 
 	out_close(of);
+	set_mtime(fname, tm);
 	return NULL;
 }
 
@@ -358,10 +361,18 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 	char *tbuf, *cbuf;
 	int i, nchar, ui;
 	char *found;
+	struct stat st;
+	struct tm tm;
 	rectype_t rt;
 	char name[8], date[11], extra[EXTRA_LEN+1];
 	char lbuf[81];
 	char *fn, *err;
+
+	/* get mtime of source tape */
+	memset(&tm, 0, sizeof tm);
+	tm.tm_hour = 12;
+	if (stat(tap->tp_path, &st) == 0)
+		(void) localtime_r(&st.st_mtime, &tm);
 
 	found = alloca(argc);
 	if (!found) {
@@ -411,7 +422,7 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 		switch (rt) {
 		    case RT_TEXT:
 		    case RT_PROC:
-			err = extract_text(&cd, fn);
+			err = extract_text(&cd, fn, &tm);
 			break;
 
 		    case RT_OPL:
@@ -420,11 +431,11 @@ int do_xopt(TAPE *tap, int argc, char **argv)
 			break;
 
 		    case RT_UPL:
-			err = extract_upl(&cd, fn);
+			err = extract_upl(&cd, fn, &tm);
 			break;
 
 		    case RT_UPLR:
-			err = extract_uplr(&cd, fn);
+			err = extract_uplr(&cd, fn, &tm);
 			break;
 
 		    case RT_DUMPPF:

@@ -23,7 +23,7 @@
 #define _OPL_H 1
 
 extern char *extract_opl(cdc_ctx_t *cd, char *name);
-extern char *extract_upl(cdc_ctx_t *cd, char *name);
-extern char *extract_uplr(cdc_ctx_t *cd, char *name);
+extern char *extract_upl(cdc_ctx_t *cd, char *name, struct tm *tm);
+extern char *extract_uplr(cdc_ctx_t *cd, char *name, struct tm *tm);
 
 #endif /* _OPL_H */

@@ -289,14 +289,13 @@ char *extract_opl(cdc_ctx_t *cd, char *name)
 	}
 
 	out_close(of);
-	if (tm.tm_mday)
-		set_mtime(fname, &tm);
+	set_mtime(fname, &tm);
 	return NULL;
 }
 
 
 /* sequential UPDATE PL */
-char *extract_upl(cdc_ctx_t *cd, char *name)
+char *extract_upl(cdc_ctx_t *cd, char *name, struct tm *tm)
 {
 	FILE *of;
 	char fname[16];
@@ -402,12 +401,13 @@ char *extract_upl(cdc_ctx_t *cd, char *name)
 	}
 
 	out_close(of);
+	set_mtime(fname, tm);
 	return NULL;
 }
 
 
 /* random UPDATE PL */
-char *extract_uplr(cdc_ctx_t *cd, char *name)
+char *extract_uplr(cdc_ctx_t *cd, char *name, struct tm *tm)
 {
 	FILE *of;
 	char fname[16];
@@ -483,5 +483,6 @@ char *extract_uplr(cdc_ctx_t *cd, char *name)
 	}
 
 	out_close(of);
+	set_mtime(fname, tm);
 	return NULL;
 }

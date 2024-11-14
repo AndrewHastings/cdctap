@@ -384,8 +384,7 @@ char *extract_pfdump(cdc_ctx_t *cd, char *name)
 
 	cdc_ctx_fini(&ocd);
 	tap_close(ot);
-	if (tm.tm_mday)
-		set_mtime(fname, &tm);
+	set_mtime(fname, &tm);
 	return NULL;
 
     err:
@@ -542,8 +541,7 @@ char *extract_dumppf(cdc_ctx_t *cd, char *name)
 
 	cdc_ctx_fini(&ocd);
 	tap_close(ot);
-	if (tm.tm_mday)
-		set_mtime(fname, &tm);
+	set_mtime(fname, &tm);
 	return NULL;
 
     err:
